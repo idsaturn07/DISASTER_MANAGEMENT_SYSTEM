@@ -3,7 +3,7 @@ import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = "disaster_is_the_key"
+app.secret_key = ""
 
 # Database connection function
 def get_db_connection():
@@ -11,7 +11,7 @@ def get_db_connection():
         db = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="Inchurahul@2046",
+            password="",
             database="auth_system",
             autocommit=True
         )
@@ -220,4 +220,5 @@ def logout():
     return redirect(url_for("home"))
 
 if __name__ == "__main__":
+
     app.run(debug=True)
