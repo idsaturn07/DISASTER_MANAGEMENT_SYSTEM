@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Nearby Shelters{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Nearby Shelters</h2>
+    
+    <div class="row mb-4">
+        <div class="col-md-6 mx-auto">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Search by location...">
+                <button class="btn btn-primary" type="button">Search</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for shelter in shelters %}
+        <div class="col-md-6 mb-4">
+            <div class="card shelter-card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ shelter.name }}</h5>
+                    <p class="card-text">
+                        <i class="fas fa-map-marker-alt"></i> {{ shelter.address }}<br>
+                        <i class="fas fa-users"></i> Capacity: {{ shelter.capacity }} people<br>
+                        <i class="fas fa-road"></i> Distance: {{ shelter.distance }}
+                    </p>
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-primary">View Details</button>
+                        <button class="btn btn-success">Get Directions</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Shelter Information</h4>
+                    <p>If you need to evacuate to a shelter, remember to bring:</p>
+                    <ul>
+                        <li>Essential medications</li>
+                        <li>Important documents</li>
+                        <li>Personal hygiene items</li>
+                        <li>Change of clothes</li>
+                        <li>Blankets or sleeping bags</li>
+                        <li>Flashlight with extra batteries</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

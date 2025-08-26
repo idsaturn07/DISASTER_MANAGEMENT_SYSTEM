@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Welcome, {{ user }} 👋</h2>
+    <p class="text-center text-muted">Your Disaster Management Dashboard</p>
+
+    <!-- cards -->
+    <div class="row text-center">
+        <!-- Report Incident -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-lg border-0 h-100">
+                <div class="card-body">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                    <h3 class="card-title h5">Report Incident</h3>
+                    <p class="card-text">Report a disaster or emergency situation immediately.</p>
+                    <a href="{{ url_for('report_incident') }}" class="btn btn-danger">Report</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nearby Shelters -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-lg border-0 h-100">
+                <div class="card-body">
+                    <i class="fas fa-home fa-3x text-primary mb-3"></i>
+                    <h3 class="card-title h5">Nearby Shelters</h3>
+                    <p class="card-text">Find safe shelters near your location during emergencies.</p>
+                    <a href="{{ url_for('nearby_shelters') }}" class="btn btn-primary">View</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Donate -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-lg border-0 h-100">
+                <div class="card-body">
+                    <i class="fas fa-hand-holding-heart fa-3x text-success mb-3"></i>
+                    <h3 class="card-title h5">Donate Money</h3>
+                    <p class="card-text">Contribute to relief efforts and help affected communities.</p>
+                    <a href="{{ url_for('donate') }}" class="btn btn-success">Donate</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Announcements + Medical -->
+    <div class="row text-center">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-lg border-0 h-100">
+                <div class="card-body">
+                    <i class="fas fa-bullhorn fa-3x text-warning mb-3"></i>
+                    <h3 class="card-title h5">Announcements</h3>
+                    <p class="card-text">Stay updated with the latest government and community alerts.</p>
+                    <a href="{{ url_for('announcements') }}" class="btn btn-warning">Check</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-lg border-0 h-100">
+                <div class="card-body">
+                    <i class="fas fa-briefcase-medical fa-3x text-info mb-3"></i>
+                    <h3 class="card-title h5">Medical Assistance</h3>
+                    <p class="card-text">Access medical help and emergency healthcare resources.</p>
+                    <a href="{{ url_for('medical') }}" class="btn btn-info">Access</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

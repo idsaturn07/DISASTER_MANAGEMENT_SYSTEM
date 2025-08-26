@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="container text-center mt-5">
+    <div class="home-container">
+        <h1 class="home-title">Welcome to Disaster Management System</h1>
+        <p class="home-subtitle">Stay safe, report incidents, and find resources during emergencies.</p>
+        {% if 'user' not in session %}
+            <a href="{{ url_for('signup') }}" class="btn btn-primary btn-lg">Get Started</a>
+        {% else %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">Go to Dashboard</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
