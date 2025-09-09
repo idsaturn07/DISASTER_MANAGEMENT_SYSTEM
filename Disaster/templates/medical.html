@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Medical Assistance{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Medical Assistance</h2>
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-ambulance fa-3x text-danger mb-3"></i>
+                    <h3 class="card-title">Emergency Services</h3>
+                    <p class="card-text text-muted">Request immediate medical assistance for emergencies.</p>
+                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#ambulanceModal">Request Ambulance</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-first-aid fa-3x text-primary mb-3"></i>
+                    <h3 class="card-title">Medical Supplies</h3>
+                    <p class="card-text text-muted">Request essential medical supplies and equipment.</p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#suppliesModal">Request Supplies</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-lg-7 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Emergency Contacts</h4>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">National Emergency Number: <strong>112</strong></li>
+                        <li class="list-group-item">Ambulance: <strong>102</strong></li>
+                        <li class="list-group-item">Disaster Management Helpline: <strong>108</strong></li>
+                        <li class="list-group-item">Local Hospital: <strong>+1-234-567-8900</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Request Medical Help</h4>
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label" for="request_type">Request Type</label>
+                            <select class="form-select" id="request_type" name="request_type" title="Select request type" required>
+                                <option value="" disabled selected>Select type</option>
+                                <option value="Ambulance">Ambulance</option>
+                                <option value="Doctor">Doctor</option>
+                                <option value="Medicine">Medicine</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="urgency">Urgency</label>
+                            <select class="form-select" id="urgency" name="urgency" title="Select urgency level" required>
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="description">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" placeholder="Provide details" title="Enter description" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-info w-100">Submit Request</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="ambulanceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Request Ambulance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Please call <strong>102</strong> directly for immediate ambulance service.</p>
+                <p>For non-emergency transport requests, please contact your local hospital.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="suppliesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Request Medical Supplies</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="locationInput" class="form-label">Enter Location</label>
+                        <input type="text" class="form-control" id="locationInput" placeholder="e.g., Connaught Place, Delhi" title="Enter location">
+                    </div>
+
+                    <button type="button" class="btn btn-primary" onclick="searchHospitals()">Search Hospitals</button>
+                </form>
+                
+                <div id="hospital-list" class="mt-3">
+                    <!-- Hospital & Clinic data will load here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function searchHospitals() {
+    const location = document.getElementById("locationInput").value;
+    if (!location) {
+        alert("Please enter a location");
+        return;
+    }
+
+    const geoResp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
+    const geoData = await geoResp.json();
+    if (geoData.length === 0) {
+        document.getElementById("hospital-list").innerHTML = "<p>No results found for this location</p>";
+        return;
+    }
+
+    const lat = geoData[0].lat;
+    const lon = geoData[0].lon;
+
+    const query = `
+        [out:json];
+        (
+          node["amenity"="hospital"](around:3000,${lat},${lon});
+          node["amenity"="clinic"](around:3000,${lat},${lon});
+          node["amenity"="doctors"](around:3000,${lat},${lon});
+          node["amenity"="pharmacy"](around:3000,${lat},${lon});
+        );
+        out;
+    `;
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(position => {
+        const userLat = position.coords.latitude;
+        const userLon = position.coords.longitude;
+
+        let html = "<h6>Nearby Medical Facilities</h6><ul class='list-group'>";
+        if (!data.elements || data.elements.length === 0) {
+            html += "<li class='list-group-item'>No facilities found nearby</li>";
+        } else {
+            data.elements.forEach(place => {
+                const name = place.tags.name || "Unnamed Facility";
+                const phone = place.tags.phone || place.tags['contact:phone'] || "Not available";
+                const mapsUrl = `https://www.google.com/maps/dir/${userLat},${userLon}/${place.lat},${place.lon}`;
+
+                html += `<li class='list-group-item'>
+                            <a href="${mapsUrl}" target="_blank" rel="noopener"><strong>${name}</strong></a><br>
+                            📞 Phone: ${phone}<br>
+                            📍 Lat: ${place.lat}, Lon: ${place.lon}
+                         </li>`;
+            });
+        }
+        html += "</ul>";
+
+        document.getElementById("hospital-list").innerHTML = html;
+    }, err => {
+        alert("Unable to retrieve your location: " + err.message);
+    });
+}
+</script>
+{% endblock %}

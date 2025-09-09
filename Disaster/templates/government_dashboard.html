@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Government Dashboard{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Government Dashboard</h2>
+        <span class="badge bg-info">Government</span>
+    </div>
+
+    <div class="row">
+        <!-- Requests Section -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Requests from Admin</h5>
+                </div>
+                <div class="card-body">
+                    {% if requests %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Request ID</th>
+                                        <th>Incident ID</th>
+                                        <th>Location</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>Timestamp</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for request in requests %}
+                                    <tr>
+                                        <td>{{ request.id }}</td>
+                                        <td>{{ request.incident_id }}</td>
+                                        <td>{{ request.incidents.location if request.incidents else 'N/A' }}</td>
+                                        <td>{{ (request.incidents.description or '')[:50] if request.incidents else 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if request.status == 'pending' %}warning{% elif request.status == 'accepted' %}success{% else %}danger{% endif %}">
+                                                {{ request.status }}
+                                            </span>
+                                        </td>
+                                        <td>{{ (request.timestamp or '')[:10] }}</td>
+                                        <td>
+                                            <form method="POST" action="{{ url_for('gov_delete_incident', incident_id=request.incident_id) }}" onsubmit="return confirm('Delete this incident?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No requests from admin yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Allocations -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Team Allocations</h5>
+                </div>
+                <div class="card-body">
+                    {% if team_allocations %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Team</th>
+                                        <th>Request ID</th>
+                                        <th>Assigned</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for allocation in team_allocations %}
+                                    <tr>
+                                        <td>{{ allocation.team_name }}</td>
+                                        <td>{{ allocation.request_id }}</td>
+                                        <td>{{ allocation.assigned_at[:10] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No team allocations yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Request to Emergency Teams -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Send Request to Emergency Teams</h5>
+                </div>
+                <div class="card-body">
+                    {% if requests %}
+                    <form method="POST" action="{{ url_for('notify_emergency_head') }}" class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label">Request</label>
+                            <select name="request_id" class="form-select" title="Select request" required>
+                                {% for r in requests %}
+                                <option value="{{ r.id }}">#{{ r.id }} (Incident {{ r.incident_id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Send Notification</button>
+                        </div>
+                    </form>
+                    {% else %}
+                        <p class="text-muted">No requests to allocate.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emergency Units Overview -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Emergency Units Status</h5>
+                </div>
+                <div class="card-body">
+                    {% if emergency_units %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Unit</th>
+                                        <th>Category</th>
+                                        <th>Status</th>
+                                        <th>Last Update</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for u in emergency_units %}
+                                    <tr>
+                                        <td>{{ u.unit_name }}</td>
+                                        <td>{{ u.unit_category }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if u.status == 'Free' %}success{% elif u.status == 'Busy' %}warning{% else %}secondary{% endif %}">{{ u.status }}</span>
+                                        </td>
+                                        <td>{{ (u.last_update or '')[:16] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No units registered.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Emergency Assignments -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Emergency Assignments</h5>
+                </div>
+                <div class="card-body">
+                    {% if emergency_assignments %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Team</th>
+                                        <th>Type</th>
+                                        <th>Incident</th>
+                                        <th>Location</th>
+                                        <th>Status</th>
+                                        <th>Assigned</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ea in emergency_assignments %}
+                                    <tr>
+                                        <td>{{ ea.id }}</td>
+                                        <td>{{ ea.team_name }}</td>
+                                        <td>{{ ea.team_type }}</td>
+                                        <td>{{ ea.request_id }}</td>
+                                        <td>{{ ea.location_text or 'N/A' }}</td>
+                                        <td>{{ ea.status }}</td>
+                                        <td>{{ (ea.assigned_at or '')[:16] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No emergency assignments yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shelter Resources Management -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Shelter Resources Management</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Resource allocation to shelters can be managed here. This feature can be extended to allow government officials to allocate food, water, and medicine to specific shelters.</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Resource allocation functionality can be implemented based on specific requirements.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

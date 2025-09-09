@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}Emergency Dashboard{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Emergency Team Dashboard</h2>
+        <span class="badge bg-danger">Emergency</span>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Your Assignments</h5>
+                </div>
+                <div class="card-body">
+                    {% if assignments %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Team</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Location</th>
+                                        <th>Map</th>
+                                        <th>Recent Updates</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for a in assignments %}
+                                    <tr>
+                                        <td>{{ a.id }}</td>
+                                        <td>{{ a.team_name }}</td>
+                                        <td>{{ a.team_type }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if a.status == 'Assigned' %}secondary{% elif a.status == 'Enroute' %}warning{% elif a.status == 'OnSite' %}info{% elif a.status == 'Completed' %}success{% else %}danger{% endif %}">
+                                                {{ a.status }}
+                                            </span>
+                                        </td>
+                                        <td>{{ a.location_text or (a.requests.incidents.location if a.requests and a.requests.incidents else 'N/A') }}</td>
+                                        <td>
+                                            {% set loc = a.location_text or (a.requests.incidents.location if a.requests and a.requests.incidents else None) %}
+                                            {% if loc %}
+                                            <a target="_blank" class="btn btn-sm btn-outline-primary" href="https://www.google.com/maps/search/{{ loc|urlencode }}" rel="noopener">
+                                                <i class="fas fa-map-marked-alt"></i> Map
+                                            </a>
+                                            {% else %}
+                                            <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% set ups = updates_map.get(a.id, []) %}
+                                            {% if ups %}
+                                                <ul class="mb-0 small">
+                                                    {% for u in ups %}
+                                                    <li>{{ (u.created_at or '')[:16] }} — {{ u.message or 'Update' }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                <span class="text-muted small">No updates</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No assignments yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Units under my headship -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Add Team</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_unit') }}" class="row g-3">
+                        <div class="col-md-10">
+                            <label class="form-label">Team Name</label>
+                            <input type="text" name="unit_name" class="form-control" placeholder="e.g., Emergency Warriors" title="Enter team name" required>
+                            <small class="text-muted">This will create 4 subteams automatically: Rescue, Escort, Medical, ResourceCollector.</small>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button class="btn btn-success" type="submit">Add</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if my_units %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">My Teams</h5>
+                    <small class="text-muted">Toggle status to Free/Busy</small>
+                </div>
+                <div class="card-body">
+                    {% for group in my_units|groupby('unit_name') %}
+                    <div class="mb-3 border rounded">
+                        <div class="p-3 bg-light fw-bold">{{ group.grouper }}</div>
+                        <div class="p-3">
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="subteam-column">Subteam</th>
+                                            <th class="status-column">Status</th>
+                                            <th class="action-column">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for u in group.list %}
+                                        <tr>
+                                            <td>{{ u.unit_category }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if u.status == 'Free' %}success{% elif u.status == 'Busy' %}warning{% else %}secondary{% endif %}">{{ u.status }}</span>
+                                            </td>
+                                            <td>
+                                                <form method="POST" action="{{ url_for('toggle_unit_status') }}" class="d-inline">
+                                                    <input type="hidden" name="unit_id" value="{{ u.id }}">
+                                                    <button class="btn btn-sm btn-outline-secondary" type="submit">Toggle</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Send Update to Government</h5>
+                </div>
+                <div class="card-body">
+                    {% if assignments %}
+                    <form method="POST" action="{{ url_for('emergency_update') }}" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Assignment</label>
+                            <select name="assignment_id" class="form-select" title="Select assignment" required>
+                                {% for a in assignments %}
+                                <option value="{{ a.id }}">#{{ a.id }} — {{ a.team_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select" title="Select status">
+                                <option value="">(no change)</option>
+                                <option value="Enroute">Enroute</option>
+                                <option value="OnSite">OnSite</option>
+                                <option value="NeedsSupport">NeedsSupport</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="reached" id="reached" title="Mark as reached">
+                                <label class="form-check-label" for="reached">Reached</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Rescued Count</label>
+                            <input type="number" min="0" name="rescued_count" class="form-control" title="Enter rescued count" placeholder="Rescued count">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Severity</label>
+                            <select name="severity" class="form-select" title="Select severity">
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Critical Count</label>
+                            <input type="number" min="0" name="critical_count" class="form-control" title="Enter critical count" placeholder="Critical count">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="need_more_support" id="need_more_support" title="Need more support">
+                                <label class="form-check-label" for="need_more_support">Need Support</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="need_medical" id="need_medical" title="Need medical assistance">
+                                <label class="form-check-label" for="need_medical">Need Medical</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Message</label>
+                            <input type="text" name="message" class="form-control" placeholder="Short update (optional)" title="Enter update message">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-danger">Send Update</button>
+                        </div>
+                    </form>
+                    {% else %}
+                        <p class="text-muted">No assignments to update.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if notifications %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Notifications From Government</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Request</th>
+                                    <th>Incident</th>
+                                    <th>Status</th>
+                                    <th>Assign Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for n in notifications %}
+                                <tr>
+                                    <td>{{ n.id }}</td>
+                                    <td>#{{ n.request_id }}</td>
+                                    <td>{{ n.requests.incidents.location if n.requests and n.requests.incidents else 'N/A' }}</td>
+                                    <td>{{ n.status }}</td>
+                                    <td>
+                                        {% if my_units %}
+                                        <form method="POST" action="{{ url_for('head_assign_unit') }}" class="d-flex gap-2">
+                                            <input type="hidden" name="request_id" value="{{ n.request_id }}">
+                                            <select name="unit_id" class="form-select form-select-sm" title="Select unit" required>
+                                                {% for u in my_units if u.status == 'Free' %}
+                                                <option value="{{ u.id }}">{{ u.unit_name }} ({{ u.unit_category }})</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button class="btn btn-sm btn-primary" type="submit">Assign</button>
+                                        </form>
+                                        {% else %}
+                                        <span class="text-muted">No free units</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.subteam-column { width: 30%; }
+.status-column { width: 20%; }
+.action-column { width: 50%; }
+</style>
+{% endblock %}

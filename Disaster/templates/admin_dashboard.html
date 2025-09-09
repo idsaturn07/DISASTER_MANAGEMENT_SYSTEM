@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Admin Dashboard</h2>
+        <div>
+            <a href="{{ url_for('admin_data_view') }}" class="btn btn-info btn-sm me-2">
+                <i class="fas fa-database me-1"></i>View All Data
+            </a>
+            <span class="badge bg-warning">Admin</span>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Incidents Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Reported Incidents</h5>
+                </div>
+                <div class="card-body">
+                    {% if incidents %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Location</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th>Timestamp</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for incident in incidents %}
+                                    <tr>
+                                        <td>{{ incident.id }}</td>
+                                        <td>{{ incident.location }}</td>
+                                        <td>{{ incident.description[:50] }}...</td>
+                                        <td>
+                                            <span class="badge bg-{% if incident.status == 'pending' %}warning{% else %}success{% endif %}">
+                                                {{ incident.status }}
+                                            </span>
+                                        </td>
+                                        <td>{{ (incident.timestamp or '')[:10] }}</td>
+                                        <td>
+                                            <form method="POST" action="{{ url_for('forward_incident') }}" class="d-inline">
+                                                <input type="hidden" name="incident_id" value="{{ incident.id }}">
+                                                <button type="submit" class="btn btn-sm btn-primary">Forward to Government</button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('delete_incident_route', incident_id=incident.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this incident?')">
+                                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No incidents reported yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Weather Data Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cloud-sun me-2"></i>Current Weather Data
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Fetch Extreme Weather Form -->
+                    <form method="POST" action="{{ url_for('fetch_extreme_weather') }}" class="mb-3">
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Scan Indian Cities for Extreme Weather
+                            </button>
+                        </div>
+                        <small class="text-muted">Ultra-fast parallel scan of major Indian cities (completes in ~5-10 seconds)</small>
+                    </form>
+                    
+                    <!-- Check Weather Alerts Form -->
+                    <form method="POST" action="{{ url_for('check_weather_alerts') }}" class="mb-3">
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-check-circle me-1"></i>Check & Remove Resolved Alerts
+                            </button>
+                        </div>
+                        <small class="text-muted">Removes weather alerts where conditions have returned to normal</small>
+                    </form>
+                    
+                    <hr>
+                    
+                    <!-- Manual Location Fetch -->
+                    <form method="POST" action="{{ url_for('fetch_weather') }}" class="mb-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="location" placeholder="Enter specific location (optional)" required>
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search me-1"></i>Check Location
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Current Weather Data -->
+                    {% if weather_data %}
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>Last updated: {{ weather_data[0].fetched_at if weather_data else 'Never' }}
+                            </small>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Location</th>
+                                        <th>Temp</th>
+                                        <th>Condition</th>
+                                        <th>Alert</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for weather in weather_data %}
+                                    <tr class="{% if weather.is_extreme %}table-danger{% endif %}">
+                                        <td>
+                                            <strong>{{ weather.location }}</strong>
+                                            {% if weather.is_extreme %}
+                                                <i class="fas fa-exclamation-triangle text-danger ms-1"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="{% if weather.temperature and weather.temperature > 35 %}text-danger{% elif weather.temperature and weather.temperature < -5 %}text-info{% endif %}">
+                                                {{ weather.temperature }}°C
+                                            </span>
+                                        </td>
+                                        <td>{{ weather.weather_condition }}</td>
+                                        <td>
+                                            {% if weather.is_extreme %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>Extreme
+                                                </span>
+                                            {% elif weather.weather_alert %}
+                                                <span class="badge bg-warning">Alert</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Normal</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ weather.fetched_at[:10] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            
+                            <!-- Extreme Weather Summary -->
+                            {% set extreme_count = weather_data | selectattr('is_extreme', 'equalto', true) | list | length %}
+                            {% if extreme_count > 0 %}
+                            <div class="alert alert-danger mt-3">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Extreme Weather Alert
+                                </h6>
+                                <p class="mb-0">{{ extreme_count }} Indian city(ies) with extreme weather conditions detected!</p>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-success mt-3">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-check-circle me-2"></i>Weather Status
+                                </h6>
+                                <p class="mb-0">No extreme weather conditions detected in monitored Indian cities.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-cloud-sun fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No weather data available.</p>
+                            <p class="text-muted small">Click "Scan Indian Cities for Extreme Weather" to fetch current weather data.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Announcement Section -->
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Create Announcement</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_announcement') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="announcement-title" class="form-label">Title</label>
+                                    <input type="text" class="form-control" id="announcement-title" name="title" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="announcement-severity" class="form-label">Severity</label>
+                                    <select class="form-select" id="announcement-severity" name="severity">
+                                        <option value="low">Low</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="critical">Critical</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="announcement-description" class="form-label">Description</label>
+                            <textarea class="form-control" id="announcement-description" name="description" rows="3" required></textarea>
+                        </div>
+                        
+                        <!-- Weather Alert Options -->
+                        {% if weather_data %}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is-weather-alert" name="is_weather_alert">
+                                <label class="form-check-label" for="is-weather-alert">
+                                    Mark as weather-related alert
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="weather-data-select" class="form-label">Link to Weather Data (Optional)</label>
+                            <select class="form-select" id="weather-data-select" name="weather_data_id">
+                                <option value="">No weather data</option>
+                                {% for weather in weather_data %}
+                                <option value="{{ weather.id }}">
+                                    {{ weather.location }} - {{ weather.temperature }}°C ({{ weather.weather_condition }})
+                                    {% if weather.is_extreme %} - EXTREME{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                        
+                        <button type="submit" class="btn btn-warning w-100">Create Announcement</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Announcements -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Announcements</h5>
+                </div>
+                <div class="card-body">
+                    {% if announcements %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Severity</th>
+                                        <th>Type</th>
+                                        <th>Time</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for announcement in announcements %}
+                                    <tr>
+                                        <td>{{ announcement.title }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if announcement.severity == 'critical' %}danger{% elif announcement.severity == 'high' %}warning{% elif announcement.severity == 'medium' %}info{% else %}secondary{% endif %}">
+                                                {{ announcement.severity }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if announcement.is_weather_alert %}
+                                                <span class="badge bg-info">Weather</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">General</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ (announcement.timestamp or '')[:10] }}</td>
+                                        <td>
+                                            <form method="POST" action="{{ url_for('delete_announcement_route', announcement_id=announcement.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this announcement?')">
+                                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No announcements created yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Nearby Shelters{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Nearby Shelters</h2>
+    
+    <!-- Search form -->
+    <div class="row mb-4">
+        <div class="col-md-8 mx-auto">
+            <form method="POST">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="location" placeholder="Enter your location (e.g., 'Mumbai, India' or 'New York, NY')" value="{{ user_location }}" title="Enter location" required>
+                    <button class="btn btn-primary" type="submit"><i class="fas fa-search me-2"></i>Find Nearby Shelters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Shelter cards -->
+    <div class="row">
+        {% for shelter in shelters %}
+        <div class="col-md-6 mb-4">
+            <div class="card shelter-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-2">{{ shelter.name }}</h5>
+                    <p class="card-text text-muted">
+                        <i class="fas fa-tag me-1"></i> Type: {{ shelter.type }}<br>
+                        <i class="fas fa-map-marker-alt me-1"></i> {{ shelter.address }}<br>
+                        <i class="fas fa-users me-1"></i> Capacity: {{ shelter.capacity }}<br>
+                        <i class="fas fa-road me-1"></i> Distance: {{ shelter.distance }}
+                    </p>
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-primary"><i class="fas fa-info-circle me-2"></i>Details</button>
+                        <button class="btn btn-success" 
+                                onclick="openDirections('{{ shelter.lat }}', '{{ shelter.lon }}')">
+                            <i class="fas fa-directions me-2"></i>Get Directions
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Info card -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Shelter Information</h4>
+                    <p>If you need to evacuate to a shelter, remember to bring:</p>
+                    <ul>
+                        <li>Essential medications</li>
+                        <li>Important documents</li>
+                        <li>Personal hygiene items</li>
+                        <li>Change of clothes</li>
+                        <li>Blankets or sleeping bags</li>
+                        <li>Flashlight with extra batteries</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openDirections(lat, lon) {
+    lat = parseFloat(lat);
+    lon = parseFloat(lon);
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            let userLat = position.coords.latitude;
+            let userLon = position.coords.longitude;
+
+            // Open Google Maps directions directly
+            let url = `https://www.google.com/maps/dir/${userLat},${userLon}/${lat},${lon}`;
+            window.open(url, "_blank", "noopener");
+        });
+    } else {
+        alert("Geolocation is not supported by this browser.");
+    }
+}
+</script>
+
+{% endblock %}
